@@ -102,7 +102,7 @@ static inline void __htlockepfl_wait_local_ticket(ticket_lock_local_t *lock,
 
     while (1) {
         PREFETCHW(lock);
-        int32_t lock_cur = lock->u.s.grant;
+        int64_t lock_cur = lock->u.s.grant;
         if (lock_cur == ticket) {
             break;
         }
@@ -125,7 +125,7 @@ static int __htlockepfl_mutex_lock(htlockepfl_mutex_t *impl,
                                    htlockepfl_context_t *me) {
     me->last_numa_node              = current_numa_node();
     ticket_lock_local_t *local_lock = &impl->local[me->last_numa_node];
-    int32_t local_ticket;
+    int64_t local_ticket;
 
 again_local:
     local_ticket = __sync_sub_and_fetch(&local_lock->u.s.request, 1);
@@ -177,8 +177,8 @@ static void __htlockepfl_mutex_unlock(htlockepfl_mutex_t *impl,
     ticket_lock_local_t *local = &impl->local[me->last_numa_node];
     PREFETCHW(local);
 
-    int32_t local_grant = local->u.s.grant;
-    int32_t local_request =
+    int64_t local_grant = local->u.s.grant;
+    int64_t local_request =
         __sync_val_compare_and_swap(&local->u.s.request, local_grant, 0);
     if (local_grant == 0 || local_grant == local_request) {
         PREFETCHW(&impl->global);

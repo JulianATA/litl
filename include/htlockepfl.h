@@ -48,8 +48,8 @@ typedef struct {
     union {
         volatile uint64_t u;
         struct {
-            volatile uint32_t grant;
-            volatile uint32_t request;
+            volatile uint64_t grant;
+            volatile uint64_t request;
         } s;
     } u;
 

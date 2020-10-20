@@ -75,7 +75,7 @@ htlockepfl_mutex_t *htlockepfl_mutex_create(const pthread_mutexattr_t *attr) {
     return impl;
 }
 
-static inline uint32_t sub_abs(const uint32_t a, const uint32_t b) {
+static inline uint64_t sub_abs(const uint64_t a, const uint64_t b) {
     if (a > b) {
         return a - b;
     } else {
@@ -84,9 +84,9 @@ static inline uint32_t sub_abs(const uint32_t a, const uint32_t b) {
 }
 
 static inline void __htlockepfl_wait_global_ticket(ticket_lock_local_t *lock,
-                                                   const uint32_t ticket) {
+                                                   const uint64_t ticket) {
     while (lock->u.s.grant != ticket) {
-        uint32_t distance = sub_abs(lock->u.s.grant, ticket);
+        uint64_t distance = sub_abs(lock->u.s.grant, ticket);
         if (distance > 1) {
             wait_cycles(distance * 256);
         } else {
@@ -96,9 +96,9 @@ static inline void __htlockepfl_wait_global_ticket(ticket_lock_local_t *lock,
 }
 
 static inline void __htlockepfl_wait_local_ticket(ticket_lock_local_t *lock,
-                                                  const uint32_t ticket) {
-    uint32_t wait          = TICKET_BASE_WAIT;
-    uint32_t distance_prev = 1;
+                                                  const uint64_t ticket) {
+    uint64_t wait          = TICKET_BASE_WAIT;
+    uint64_t distance_prev = 1;
 
     while (1) {
         PREFETCHW(lock);
@@ -106,7 +106,7 @@ static inline void __htlockepfl_wait_local_ticket(ticket_lock_local_t *lock,
         if (lock_cur == ticket) {
             break;
         }
-        uint32_t distance = sub_abs(lock->u.s.grant, ticket);
+        uint64_t distance = sub_abs(lock->u.s.grant, ticket);
         if (distance > 1) {
             if (distance != distance_prev) {
                 distance_prev = distance;
@@ -145,7 +145,7 @@ again_local:
         local_lock->u.s.request = NB_TICKETS_LOCAL;
 
         ticket_lock_global_t *global_lock = &impl->global;
-        uint32_t global_ticket =
+        uint64_t global_ticket =
             __sync_fetch_and_add(&global_lock->u.s.request, 1);
 
         __htlockepfl_wait_global_ticket((ticket_lock_local_t *)global_lock,
